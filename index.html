@@ -136,47 +136,50 @@ async function sha256Hex(str){
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
 }
-// 勝ち抜き判定：players=[{pid,name,hands[5]}]（pidで安定ソート済み）
-function resolveMulti(players, seedHex){
-  const handsOf = {}; const nameOf = {};
+// 順位判定：players=[{pid,name,hands[5]}]（安定ソート済み）。
+// 1位から順に勝者を抽出していき、全員の順位を決める。各バトルは手を1回目から再生（あいこは次へ、5回で決まらなければ自動ランダム継続）。
+function resolveRanking(players, seedHex){
+  const handsOf = {}, nameOf = {};
   players.forEach(p => { handsOf[p.pid] = p.hands; nameOf[p.pid] = p.name; });
-  let active = players.map(p => p.pid);
   const rng = mulberry32(parseInt(seedHex.slice(0,8), 16) >>> 0);
-  const rounds = [];
-  const elimOrder = []; // 早く脱落した順
-  let r = 0;
-  while (active.length > 1 && r < 500){
-    const hands = active.map(pid => {
-      const h = handsOf[pid];
-      return (r < h.length) ? h[r] : HANDS[Math.floor(rng()*3)].key;
-    });
-    const present = new Set(hands);
-    let eliminated = [];
-    let decisive = false;
-    if (present.size === 2){
-      const [t1, t2] = [...present];
-      const winHand = beats(t1, t2) ? t1 : t2;
-      const loseHand = (winHand === t1) ? t2 : t1;
-      eliminated = active.filter((pid, i) => hands[i] === loseHand);
-      decisive = true;
+  const ranking = [];
+  const battles = []; // {place, rounds:[...]}
+  let pool = players.map(p => p.pid);
+  let guard = 0;
+  while (pool.length > 0 && guard++ < 1000){
+    if (pool.length === 1){ ranking.push(pool[0]); break; }
+    const passRounds = [];
+    let active = pool.slice();
+    let r = 0;
+    while (active.length > 1 && r < 500){
+      const hands = active.map(pid => {
+        const h = handsOf[pid];
+        return (r < h.length) ? h[r] : HANDS[Math.floor(rng()*3)].key;
+      });
+      const present = new Set(hands);
+      let eliminated = [], decisive = false;
+      if (present.size === 2){
+        const [t1, t2] = [...present];
+        const winHand = beats(t1, t2) ? t1 : t2;
+        const loseHand = (winHand === t1) ? t2 : t1;
+        eliminated = active.filter((pid, i) => hands[i] === loseHand);
+        decisive = true;
+      }
+      passRounds.push({
+        n: r + 1,
+        type: (r < N_HANDS) ? "manual" : "random",
+        plays: active.map((pid, i) => ({ pid, name: nameOf[pid], hand: hands[i] })),
+        eliminated, decisive,
+      });
+      if (decisive) active = active.filter((pid, i) => !eliminated.includes(pid));
+      r++;
     }
-    rounds.push({
-      n: r + 1,
-      type: (r < N_HANDS) ? "manual" : "random",
-      plays: active.map((pid, i) => ({ pid, name: nameOf[pid], hand: hands[i] })),
-      eliminated, decisive,
-    });
-    if (decisive){
-      elimOrder.push(...eliminated);
-      active = active.filter((pid, i) => !eliminated.includes(pid));
-    }
-    r++;
+    const winner = active[0];
+    ranking.push(winner);
+    battles.push({ place: ranking.length, rounds: passRounds });
+    pool = pool.filter(pid => pid !== winner);
   }
-  const winnerPid = active[0] || null;
-  const standings = [];
-  if (winnerPid) standings.push(winnerPid);
-  for (let i = elimOrder.length - 1; i >= 0; i--) standings.push(elimOrder[i]);
-  return { winnerPid, rounds, standings, nameOf };
+  return { ranking, battles, nameOf };
 }
 
 /* ---------- 端末の記憶 ---------- */
@@ -256,7 +259,7 @@ function renderSetupNeeded(){
 function renderCreate(){
   show(`
     <h2>新しいじゃんけんを作る</h2>
-    <p class="lead" style="text-align:left;margin:0 0 4px;color:var(--sub)">あなたの手を5つ決めます。みんなの手がそろったら、1回目から順に勝負。負けた人が抜けていき、最後に残った1人が勝ちです（あいこは次の手へ）。<b>5回ともあいこの場合は、6回目以降は自動でランダムな手が出て決着します。</b></p>
+    <p class="lead" style="text-align:left;margin:0 0 4px;color:var(--sub)">あなたの手を5つ決めます。みんなの手がそろったら、1回目から順に勝負して、順位（1位・2位・3位…）を決めます（あいこは次の手へ）。<b>5回ともあいこの場合は、6回目以降は自動でランダムな手が出て決着します。</b></p>
     <label>あなたの名前</label>
     <input type="text" id="nm" maxlength="12" placeholder="例：たろう" />
     <label>5回ぶんの手を選ぶ</label>
@@ -397,36 +400,46 @@ async function renderResult(me){
   if (players.length < 2) return show(`<div class="err">参加者が足りませんでした。</div>`);
 
   const seed = await sha256Hex(players.map(p => p.pid + ":" + p.hands.join("")).join("|"));
-  const res = resolveMulti(players, seed);
+  const res = resolveRanking(players, seed);
   const myPid = me && me.pid;
+  const N = res.ranking.length;
+  const medals = ["🥇","🥈","🥉"];
+  const firstName = res.nameOf[res.ranking[0]];
+  const myRank = myPid ? (res.ranking.indexOf(myPid) + 1) : 0;
 
   // ヘッドライン
-  let headline, cls = "";
-  if (!res.winnerPid){ headline = "引き分け"; }
-  else {
-    headline = `${res.nameOf[res.winnerPid]} の勝ち！`;
-    if (myPid){ cls = (res.winnerPid === myPid) ? "win" : "lose"; }
+  let headTxt, headCls = "";
+  if (myRank){
+    headTxt = `あなたは ${myRank}位！`;
+    headCls = (myRank === 1) ? "win" : (myRank === N ? "lose" : "");
+  } else {
+    headTxt = `${firstName} が1位！`;
   }
-  // 順位
-  let stand = res.standings.map((pid, i) => {
+  // 順位リスト
+  const rows = res.ranking.map((pid, i) => {
+    const rank = i + 1;
+    const badge = (i < 3) ? medals[i] : rank;
     const isMe = pid === myPid;
-    return `<div class="stand-row ${i===0?"first":""}"><span class="rank">${i+1}</span><span class="nm">${esc(res.nameOf[pid])}</span>${isMe?'<span class="me">（あなた）</span>':""}</div>`;
+    return `<div class="stand-row ${i===0?"first":""}"><span class="rank">${badge}</span><span class="nm">${esc(res.nameOf[pid])}</span><span style="margin-left:auto;color:var(--sub);font-size:12px">${rank}位</span>${isMe?'<span class="me" style="margin-left:8px">（あなた）</span>':""}</div>`;
   }).join("");
-  // ラウンド詳細
-  let rdetail = res.rounds.map(rd => {
-    const plays = rd.plays.map(p => `<span class="play">${EMO[p.hand]} ${esc(p.name)}</span>`).join("");
-    let out = "";
-    if (rd.decisive){ out = `<span class="out">→ ${rd.eliminated.map(pid => esc(res.nameOf[pid])).join("・")} 脱落</span>`; }
-    else { out = `<span class="tie">→ あいこ</span>`; }
-    return `<div class="rnd"><div class="rh">${rd.type==="random"?"追加":rd.n+"回目"}</div>${plays} ${out}</div>`;
+  // ラウンド詳細（順位ごとの対戦）
+  const rdetail = res.battles.map(b => {
+    const head = `<div class="rh" style="margin-top:10px;font-weight:700;color:var(--accent-d)">${b.place}位決め</div>`;
+    const rs = b.rounds.map(rd => {
+      const plays = rd.plays.map(p => `<span class="play">${EMO[p.hand]} ${esc(p.name)}</span>`).join("");
+      const out = rd.decisive ? `<span class="out">→ ${rd.eliminated.map(pid => esc(res.nameOf[pid])).join("・")} 敗退</span>` : `<span class="tie">→ あいこ</span>`;
+      return `<div class="rnd"><div class="rh">${rd.type==="random"?"追加":rd.n+"回目"}</div>${plays} ${out}</div>`;
+    }).join("");
+    return head + rs;
   }).join("");
 
   show(`
     <div class="result-head">
-      <div style="font-size:13px;color:var(--sub)">参加 ${players.length}人</div>
-      <div class="big ${cls}">${esc(headline)}</div>
+      <div style="font-size:13px;color:var(--sub)">参加 ${N}人・順位結果</div>
+      <div class="big ${headCls}">${esc(headTxt)}</div>
+      ${myRank ? `<div style="font-size:12px;color:var(--sub)">1位：${esc(firstName)}</div>` : ""}
     </div>
-    <div class="standings"><div class="rtitle" style="font-size:12px;color:var(--sub)">順位</div>${stand}</div>
+    <div class="standings"><div class="rtitle" style="font-size:12px;color:var(--sub)">順位</div>${rows}</div>
     <details class="rounds"><summary>各回の手をみる</summary>${rdetail}</details>
     <button class="ghost" id="again">新しいじゃんけんを作る</button>
   `);
