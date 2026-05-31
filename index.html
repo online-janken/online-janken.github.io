@@ -256,7 +256,7 @@ function renderSetupNeeded(){
 function renderCreate(){
   show(`
     <h2>新しいじゃんけんを作る</h2>
-    <p class="lead" style="text-align:left;margin:0 0 4px;color:var(--sub)">あなたの手を5つ決めます。みんなの手がそろったら、1回目から順に勝負。負けた人が抜けていき、最後に残った1人が勝ちです（あいこは次の手へ）。</p>
+    <p class="lead" style="text-align:left;margin:0 0 4px;color:var(--sub)">あなたの手を5つ決めます。みんなの手がそろったら、1回目から順に勝負。負けた人が抜けていき、最後に残った1人が勝ちです（あいこは次の手へ）。<b>5回ともあいこの場合は、6回目以降は自動でランダムな手が出て決着します。</b></p>
     <label>あなたの名前</label>
     <input type="text" id="nm" maxlength="12" placeholder="例：たろう" />
     <label>5回ぶんの手を選ぶ</label>
@@ -344,7 +344,7 @@ function rosterHTML(roster, mePid, creatorPid){
 function renderJoin(roster, count){
   show(`
     <h2>じゃんけんに参加する</h2>
-    <p class="lead" style="text-align:left;color:var(--sub);margin:0 0 4px;">他の人の手は伏せられています（見えません）。あなたの手を5つ決めましょう。</p>
+    <p class="lead" style="text-align:left;color:var(--sub);margin:0 0 4px;">他の人の手は伏せられています（見えません）。あなたの手を5つ決めましょう。<b>5回ともあいこなら、6回目以降は自動でランダムな手が出て決着します。</b></p>
     ${rosterHTML(roster, null, META.creatorPid)}
     <label>あなたの名前</label>
     <input type="text" id="nm" maxlength="12" placeholder="例：はなこ" />
