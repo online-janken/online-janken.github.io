@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>オンラインじゃんけん</title>
+<style>
+  :root{
+    --bg:#f3f4f8; --card:#ffffff; --ink:#1f2430; --sub:#6b7280;
+    --line:#e5e7eb; --accent:#4f6ef7; --accent-d:#3b56d6;
+    --win:#16a34a; --lose:#dc2626; --tie:#9ca3af;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6;
+    display:flex; justify-content:center; padding:20px 14px 60px;
+  }
+  #app{width:100%; max-width:480px;}
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:22px 20px; box-shadow:0 6px 24px rgba(20,30,60,.06); margin-top:14px;
+  }
+  h1{font-size:20px; margin:4px 0 2px; text-align:center;}
+  .lead{color:var(--sub); font-size:13px; text-align:center; margin:0 0 6px;}
+  h2{font-size:16px; margin:0 0 10px;}
+  label{display:block; font-size:13px; color:var(--sub); margin:14px 0 6px;}
+  input[type=text]{
+    width:100%; padding:11px 12px; font-size:15px; border:1px solid var(--line);
+    border-radius:10px; outline:none;
+  }
+  input[type=text]:focus{border-color:var(--accent);}
+  .pick-row{display:flex; align-items:center; gap:8px; margin:8px 0;}
+  .pick-row .rlabel{width:54px; font-size:13px; color:var(--sub);}
+  .hand-btn{
+    flex:1; font-size:24px; padding:8px 0; border:2px solid var(--line);
+    background:#fff; border-radius:12px; cursor:pointer; transition:.12s;
+  }
+  .hand-btn:hover{border-color:#c7cdd8;}
+  .hand-btn.sel{border-color:var(--accent); background:#eef2ff;}
+  .hand-btn .cap{display:block; font-size:11px; color:var(--sub); margin-top:2px;}
+  button.primary{
+    width:100%; margin-top:18px; padding:13px; font-size:15px; font-weight:700;
+    color:#fff; background:var(--accent); border:none; border-radius:12px; cursor:pointer;
+  }
+  button.primary:hover{background:var(--accent-d);}
+  button.primary:disabled{background:#c2c8d6; cursor:not-allowed;}
+  button.ghost{
+    width:100%; margin-top:10px; padding:11px; font-size:14px;
+    color:var(--accent); background:#fff; border:1px solid var(--accent); border-radius:12px; cursor:pointer;
+  }
+  .linkbox{display:flex; gap:8px; margin-top:8px;}
+  .linkbox input{flex:1; font-size:13px; color:var(--sub);}
+  .copybtn{padding:0 14px; border:1px solid var(--accent); background:#fff; color:var(--accent); border-radius:10px; cursor:pointer; font-size:13px; white-space:nowrap;}
+  .hint{font-size:12px; color:var(--sub); margin-top:10px;}
+  .status{font-size:13px; text-align:center; padding:10px; border-radius:10px; background:#f0f3ff; color:var(--accent-d); margin-top:14px;}
+  .spin{display:inline-block; width:14px; height:14px; border:2px solid #c7cdd8; border-top-color:var(--accent); border-radius:50%; animation:sp .8s linear infinite; vertical-align:-2px; margin-right:6px;}
+  @keyframes sp{to{transform:rotate(360deg);}}
+  .roster{margin-top:14px; border-top:1px solid var(--line);}
+  .roster .rtitle{font-size:12px; color:var(--sub); margin:10px 0 6px;}
+  .pchip{display:flex; align-items:center; gap:8px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin:6px 0; font-size:14px;}
+  .pchip .dot{width:8px;height:8px;border-radius:50%;background:var(--win);}
+  .pchip .tag{margin-left:auto; font-size:11px; color:var(--sub); background:#f1f3f8; padding:2px 8px; border-radius:20px;}
+  .result-head{text-align:center; padding:8px 0 4px;}
+  .result-head .big{font-size:28px; font-weight:800; margin:6px 0;}
+  .result-head .big.win{color:var(--win);}
+  .result-head .big.lose{color:var(--lose);}
+  .standings{margin-top:12px;}
+  .stand-row{display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid var(--line); border-radius:10px; margin:6px 0; font-size:14px;}
+  .stand-row .rank{width:26px; height:26px; border-radius:50%; background:#eef2ff; color:var(--accent-d); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px;}
+  .stand-row.first .rank{background:#fef3c7; color:#b45309;}
+  .stand-row .nm{font-weight:600;}
+  .stand-row .me{font-size:11px; color:var(--accent-d);}
+  details.rounds{margin-top:14px;}
+  details.rounds summary{font-size:13px; color:var(--accent-d); cursor:pointer;}
+  .rnd{padding:8px 0; border-bottom:1px solid var(--line); font-size:13px;}
+  .rnd .rh{color:var(--sub); font-size:12px; margin-bottom:2px;}
+  .rnd .play{display:inline-block; margin-right:10px;}
+  .rnd .out{color:var(--lose); font-size:12px;}
+  .rnd .tie{color:var(--tie); font-size:12px;}
+  .err{background:#fef2f2; color:#b91c1c; border:1px solid #fecaca; padding:12px; border-radius:10px; font-size:13px; margin-top:12px;}
+  .setup{background:#fffbeb; border:1px solid #fde68a; color:#92400e; padding:14px; border-radius:12px; font-size:13px;}
+  .setup code{background:#fff7e0; padding:1px 5px; border-radius:4px;}
+  .footer{text-align:center; margin-top:18px; font-size:11px; color:#aab;}
+  .name{font-weight:700;}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>✊✌✋ オンラインじゃんけん</h1>
+  <p class="lead">離れた友達と、リンクひとつで勝負を決める（何人でもOK）</p>
+  <div id="screen" class="card">
+    <div class="status"><span class="spin"></span>読み込み中…</div>
+  </div>
+  <div class="footer">友達同士で勝敗を決めるためのミニサイト</div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, get, set, update, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCiM9HZJmzHPr-NiNmQ4IPnpc4GRfmJnUo",
+  authDomain: "janken-c8ee5.firebaseapp.com",
+  databaseURL: "https://janken-c8ee5-default-rtdb.firebaseio.com",
+  projectId: "janken-c8ee5",
+  storageBucket: "janken-c8ee5.firebasestorage.app",
+  messagingSenderId: "567294170207",
+  appId: "1:567294170207:web:5d460675dfcb9195fd77ea"
+};
+
+const HANDS = [
+  { key: "rock",     emoji: "✊", label: "グー" },
+  { key: "scissors", emoji: "✌", label: "チョキ" },
+  { key: "paper",    emoji: "✋", label: "パー" },
+];
+const EMO = Object.fromEntries(HANDS.map(h => [h.key, h.emoji]));
+const N_HANDS = 5;
+
+const screen = document.getElementById("screen");
+const isConfigured = !firebaseConfig.databaseURL.includes("PASTE_YOUR");
+
+/* ---------- ロジック ---------- */
+function beats(x, y){
+  return (x==="rock"&&y==="scissors") || (x==="scissors"&&y==="paper") || (x==="paper"&&y==="rock");
+}
+function mulberry32(a){
+  return function(){
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+async function sha256Hex(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,"0")).join("");
+}
+// 勝ち抜き判定：players=[{pid,name,hands[5]}]（pidで安定ソート済み）
+function resolveMulti(players, seedHex){
+  const handsOf = {}; const nameOf = {};
+  players.forEach(p => { handsOf[p.pid] = p.hands; nameOf[p.pid] = p.name; });
+  let active = players.map(p => p.pid);
+  const rng = mulberry32(parseInt(seedHex.slice(0,8), 16) >>> 0);
+  const rounds = [];
+  const elimOrder = []; // 早く脱落した順
+  let r = 0;
+  while (active.length > 1 && r < 500){
+    const hands = active.map(pid => {
+      const h = handsOf[pid];
+      return (r < h.length) ? h[r] : HANDS[Math.floor(rng()*3)].key;
+    });
+    const present = new Set(hands);
+    let eliminated = [];
+    let decisive = false;
+    if (present.size === 2){
+      const [t1, t2] = [...present];
+      const winHand = beats(t1, t2) ? t1 : t2;
+      const loseHand = (winHand === t1) ? t2 : t1;
+      eliminated = active.filter((pid, i) => hands[i] === loseHand);
+      decisive = true;
+    }
+    rounds.push({
+      n: r + 1,
+      type: (r < N_HANDS) ? "manual" : "random",
+      plays: active.map((pid, i) => ({ pid, name: nameOf[pid], hand: hands[i] })),
+      eliminated, decisive,
+    });
+    if (decisive){
+      elimOrder.push(...eliminated);
+      active = active.filter((pid, i) => !eliminated.includes(pid));
+    }
+    r++;
+  }
+  const winnerPid = active[0] || null;
+  const standings = [];
+  if (winnerPid) standings.push(winnerPid);
+  for (let i = elimOrder.length - 1; i >= 0; i--) standings.push(elimOrder[i]);
+  return { winnerPid, rounds, standings, nameOf };
+}
+
+/* ---------- 端末の記憶 ---------- */
+function lkey(id){ return "janken:" + id; }
+function loadMe(id){ try { return JSON.parse(localStorage.getItem(lkey(id)) || "null"); } catch(e){ return null; } }
+function saveMe(id, d){ localStorage.setItem(lkey(id), JSON.stringify(d)); }
+
+/* ---------- 表示ヘルパ ---------- */
+function show(html){ screen.innerHTML = html; }
+function rid(){ return Math.random().toString(36).slice(2,8) + Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c])); }
+function pickerHTML(){
+  let rows = "";
+  for (let i = 0; i < N_HANDS; i++){
+    const btns = HANDS.map(h =>
+      `<button type="button" class="hand-btn" data-round="${i}" data-hand="${h.key}">${h.emoji}<span class="cap">${h.label}</span></button>`
+    ).join("");
+    rows += `<div class="pick-row"><span class="rlabel">${i+1}回目</span>${btns}</div>`;
+  }
+  return rows;
+}
+function wirePicker(onChange){
+  screen.querySelectorAll(".hand-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const r = btn.dataset.round;
+      screen.querySelectorAll(`.hand-btn[data-round="${r}"]`).forEach(b => b.classList.remove("sel"));
+      btn.classList.add("sel");
+      onChange && onChange();
+    });
+  });
+}
+function readPicks(){
+  const picks = [];
+  for (let i = 0; i < N_HANDS; i++){
+    const sel = screen.querySelector(`.hand-btn[data-round="${i}"].sel`);
+    if (!sel) return null;
+    picks.push(sel.dataset.hand);
+  }
+  return picks;
+}
+function wireCopy(link){
+  const btn = screen.querySelector("#cp");
+  if (!btn) return;
+  btn.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(link); btn.textContent = "コピー済"; setTimeout(()=>btn.textContent="コピー",1500); }
+    catch(e){ const i = screen.querySelector("#lnk"); if (i) i.select(); }
+  });
+}
+
+/* ---------- Firebase ---------- */
+let db = null;
+if (isConfigured){ try { db = getDatabase(initializeApp(firebaseConfig)); } catch(e){ console.error(e); } }
+const mref = (gid) => ref(db, `games/${gid}/meta`);
+const rref = (gid) => ref(db, `games/${gid}/roster`);
+const sref = (gid) => ref(db, `games/${gid}/secrets`);
+
+/* ---------- 状態 ---------- */
+let GID = null, META = null, ROSTER = null, RESULT_DONE = false;
+
+function start(){
+  if (!isConfigured) return renderSetupNeeded();
+  GID = new URLSearchParams(location.search).get("g");
+  if (!GID) return renderCreate();
+  subscribe(GID);
+}
+function subscribe(gid){
+  onValue(mref(gid), s => { META = s.val(); rerender(); }, e => fail(e));
+  onValue(rref(gid), s => { ROSTER = s.val() || {}; rerender(); }, e => fail(e));
+}
+function fail(e){ show(`<div class="err">接続エラー：${esc(e.message)}<br>Firebaseの設定とルールを確認してください。</div>`); }
+
+function renderSetupNeeded(){
+  show(`<div class="setup"><b>セットアップが必要です</b><br><br>このファイルの <code>firebaseConfig</code> にFirebase設定を貼り付けてください。「セットアップ手順書」を参照。</div>`);
+}
+
+/* --- ホスト：新規作成 --- */
+function renderCreate(){
+  show(`
+    <h2>新しいじゃんけんを作る</h2>
+    <p class="lead" style="text-align:left;margin:0 0 4px;color:var(--sub)">あなたの手を5つ決めます。みんなの手がそろったら、1回目から順に勝負。負けた人が抜けていき、最後に残った1人が勝ちです（あいこは次の手へ）。</p>
+    <label>あなたの名前</label>
+    <input type="text" id="nm" maxlength="12" placeholder="例：たろう" />
+    <label>5回ぶんの手を選ぶ</label>
+    ${pickerHTML()}
+    <label>開始用パスワード（あなただけが知っておく言葉）</label>
+    <input type="text" id="kw" maxlength="20" placeholder="例：あさひ123" />
+    <p class="hint">友達が参加し終わったら、このパスワードを入れて「開始」を押すと結果が出ます。</p>
+    <button class="primary" id="go" disabled>リンクを作る</button>
+  `);
+  const refresh = () => {
+    const ok = readPicks() && screen.querySelector("#nm").value.trim() && screen.querySelector("#kw").value.trim();
+    screen.querySelector("#go").disabled = !ok;
+  };
+  wirePicker(refresh);
+  screen.querySelector("#nm").addEventListener("input", refresh);
+  screen.querySelector("#kw").addEventListener("input", refresh);
+  screen.querySelector("#go").addEventListener("click", async () => {
+    const hands = readPicks();
+    const name = screen.querySelector("#nm").value.trim() || "ホスト";
+    const keyword = screen.querySelector("#kw").value.trim();
+    const gid = rid(), pid = rid();
+    const keywordHash = await sha256Hex(keyword);
+    try {
+      await set(mref(gid), { createdAt: Date.now(), status: "open", keywordHash, creatorPid: pid });
+      await set(ref(db, `games/${gid}/secrets/${pid}`), { hands });
+      await set(ref(db, `games/${gid}/roster/${pid}`), { name, joinedAt: Date.now() });
+    } catch(e){ return show(`<div class="err">作成に失敗：${esc(e.message)}</div>`); }
+    saveMe(gid, { pid, isCreator: true });
+    GID = gid;
+    history.replaceState(null, "", "?g=" + gid);
+    subscribe(gid);
+  });
+}
+
+/* --- 画面の出し分け --- */
+function rerender(){
+  if (!META){ return; } // metaがまだ
+  const me = loadMe(GID);
+  const roster = ROSTER || {};
+  const ids = Object.keys(roster);
+  const count = ids.length;
+
+  if (META.status === "finished"){ return renderResult(me); }
+
+  const joined = me && roster[me.pid];
+  const link = location.origin + location.pathname + "?g=" + GID;
+
+  if (joined && me.isCreator){
+    // ホストのロビー
+    const canStart = count >= 2;
+    return show(`
+      <h2>みんなを招待しよう</h2>
+      <p class="lead" style="text-align:left;color:var(--sub);margin:0 0 8px;">下のリンクを友達に送って参加してもらいましょう。何人でも参加できます。</p>
+      <div class="linkbox"><input type="text" id="lnk" value="${esc(link)}" readonly /><button class="copybtn" id="cp">コピー</button></div>
+      ${rosterHTML(roster, me.pid, META.creatorPid)}
+      <label>開始用パスワード</label>
+      <input type="text" id="kw" maxlength="20" placeholder="作成時に決めたパスワード" />
+      <button class="primary" id="go" ${canStart ? "" : "disabled"}>じゃんけん開始！（${count}人）</button>
+      ${canStart ? "" : `<p class="hint">あと1人以上の参加を待っています。</p>`}
+      <div id="ke"></div>
+    `), wireCopy(link), wireStart();
+  }
+  if (joined){
+    // 参加者の待機
+    return show(`
+      ${statusLine(`手を登録しました。ホストの開始を待っています…`)}
+      ${rosterHTML(roster, me.pid, META.creatorPid)}
+      <p class="hint">このページは開いたままでOK。決まると自動で結果が出ます。</p>
+    `);
+  }
+  // 未参加 → 参加フォーム
+  return renderJoin(roster, count);
+}
+function statusLine(t){ return `<div class="status"><span class="spin"></span>${t}</div>`; }
+function rosterHTML(roster, mePid, creatorPid){
+  const ids = Object.keys(roster).sort((a,b)=>(roster[a].joinedAt||0)-(roster[b].joinedAt||0));
+  let rows = ids.map(pid => {
+    const tags = [];
+    if (pid === creatorPid) tags.push("ホスト");
+    if (pid === mePid) tags.push("あなた");
+    return `<div class="pchip"><span class="dot"></span><span>${esc(roster[pid].name)}</span>${tags.length?`<span class="tag">${tags.join("・")}</span>`:""}</div>`;
+  }).join("");
+  return `<div class="roster"><div class="rtitle">参加者 ${ids.length}人</div>${rows}</div>`;
+}
+function renderJoin(roster, count){
+  show(`
+    <h2>じゃんけんに参加する</h2>
+    <p class="lead" style="text-align:left;color:var(--sub);margin:0 0 4px;">他の人の手は伏せられています（見えません）。あなたの手を5つ決めましょう。</p>
+    ${rosterHTML(roster, null, META.creatorPid)}
+    <label>あなたの名前</label>
+    <input type="text" id="nm" maxlength="12" placeholder="例：はなこ" />
+    <label>5回ぶんの手を選ぶ</label>
+    ${pickerHTML()}
+    <button class="primary" id="join" disabled>この手で参加する</button>
+  `);
+  const refresh = () => { screen.querySelector("#join").disabled = !(readPicks() && screen.querySelector("#nm").value.trim()); };
+  wirePicker(refresh);
+  screen.querySelector("#nm").addEventListener("input", refresh);
+  screen.querySelector("#join").addEventListener("click", async () => {
+    const hands = readPicks();
+    const name = screen.querySelector("#nm").value.trim() || "参加者";
+    const m = (await get(mref(GID))).val();
+    if (!m || m.status !== "open") return show(`<div class="err">この勝負はすでに開始または終了しています。</div>`);
+    const pid = rid();
+    try {
+      await set(ref(db, `games/${GID}/secrets/${pid}`), { hands });
+      await set(ref(db, `games/${GID}/roster/${pid}`), { name, joinedAt: Date.now() });
+    } catch(e){ return show(`<div class="err">参加に失敗：${esc(e.message)}</div>`); }
+    saveMe(GID, { pid, isCreator: false });
+    rerender();
+  });
+}
+function wireStart(){
+  const go = screen.querySelector("#go"); if (!go) return;
+  go.addEventListener("click", async () => {
+    const kw = (screen.querySelector("#kw").value || "").trim();
+    const box = screen.querySelector("#ke");
+    const h = await sha256Hex(kw);
+    if (h !== META.keywordHash){ box.innerHTML = `<div class="err">パスワードが違います。</div>`; return; }
+    go.disabled = true; go.textContent = "判定中…";
+    try { await update(mref(GID), { status: "finished", startedAt: Date.now() }); }
+    catch(e){ go.disabled = false; box.innerHTML = `<div class="err">開始に失敗：${esc(e.message)}</div>`; }
+  });
+}
+
+/* --- 結果 --- */
+async function renderResult(me){
+  if (RESULT_DONE) return;
+  RESULT_DONE = true;
+  let secrets;
+  try { secrets = (await get(sref(GID))).val() || {}; }
+  catch(e){ RESULT_DONE = false; return show(`<div class="err">結果の取得に失敗：${esc(e.message)}</div>`); }
+  const roster = ROSTER || {};
+  const players = Object.keys(secrets)
+    .filter(pid => roster[pid] && Array.isArray(secrets[pid].hands))
+    .map(pid => ({ pid, name: roster[pid].name, hands: secrets[pid].hands, joinedAt: roster[pid].joinedAt || 0 }))
+    .sort((a,b)=> (a.joinedAt - b.joinedAt) || (a.pid < b.pid ? -1 : 1));
+  if (players.length < 2) return show(`<div class="err">参加者が足りませんでした。</div>`);
+
+  const seed = await sha256Hex(players.map(p => p.pid + ":" + p.hands.join("")).join("|"));
+  const res = resolveMulti(players, seed);
+  const myPid = me && me.pid;
+
+  // ヘッドライン
+  let headline, cls = "";
+  if (!res.winnerPid){ headline = "引き分け"; }
+  else {
+    headline = `${res.nameOf[res.winnerPid]} の勝ち！`;
+    if (myPid){ cls = (res.winnerPid === myPid) ? "win" : "lose"; }
+  }
+  // 順位
+  let stand = res.standings.map((pid, i) => {
+    const isMe = pid === myPid;
+    return `<div class="stand-row ${i===0?"first":""}"><span class="rank">${i+1}</span><span class="nm">${esc(res.nameOf[pid])}</span>${isMe?'<span class="me">（あなた）</span>':""}</div>`;
+  }).join("");
+  // ラウンド詳細
+  let rdetail = res.rounds.map(rd => {
+    const plays = rd.plays.map(p => `<span class="play">${EMO[p.hand]} ${esc(p.name)}</span>`).join("");
+    let out = "";
+    if (rd.decisive){ out = `<span class="out">→ ${rd.eliminated.map(pid => esc(res.nameOf[pid])).join("・")} 脱落</span>`; }
+    else { out = `<span class="tie">→ あいこ</span>`; }
+    return `<div class="rnd"><div class="rh">${rd.type==="random"?"追加":rd.n+"回目"}</div>${plays} ${out}</div>`;
+  }).join("");
+
+  show(`
+    <div class="result-head">
+      <div style="font-size:13px;color:var(--sub)">参加 ${players.length}人</div>
+      <div class="big ${cls}">${esc(headline)}</div>
+    </div>
+    <div class="standings"><div class="rtitle" style="font-size:12px;color:var(--sub)">順位</div>${stand}</div>
+    <details class="rounds"><summary>各回の手をみる</summary>${rdetail}</details>
+    <button class="ghost" id="again">新しいじゃんけんを作る</button>
+  `);
+  const again = screen.querySelector("#again");
+  if (again) again.addEventListener("click", () => { location.href = location.origin + location.pathname; });
+}
+
+start();
+</script>
+</body>
+</html>
