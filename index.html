@@ -3,7 +3,22 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>オンラインじゃんけん</title>
+<title>オンラインじゃんけん — リンクひとつで友達と勝負（複数人OK・登録不要）</title>
+<meta name="description" content="離れた友達とリンクひとつでじゃんけん勝負。2人でも3人以上でもOK、全員の順位を自動で決定。アカウント登録・アプリ不要の無料ミニサイト。順番決め・奢り決め・リモート飲み会に。" />
+<link rel="canonical" href="https://online-janken.github.io/" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="オンラインじゃんけん" />
+<meta property="og:title" content="オンラインじゃんけん — リンクひとつで勝負を決める" />
+<meta property="og:description" content="離れた友達とじゃんけん勝負。何人でもOK・登録不要・無料。リンクを送るだけで順位が決まる。" />
+<meta property="og:url" content="https://online-janken.github.io/" />
+<meta property="og:image" content="https://online-janken.github.io/ogp.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:locale" content="ja_JP" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="オンラインじゃんけん — リンクひとつで勝負を決める" />
+<meta name="twitter:description" content="離れた友達とじゃんけん勝負。何人でもOK・登録不要・無料。" />
+<meta name="twitter:image" content="https://online-janken.github.io/ogp.png" />
 <style>
   :root{
     --bg:#f3f4f8; --card:#ffffff; --ink:#1f2430; --sub:#6b7280;
@@ -83,6 +98,24 @@
   .setup code{background:#fff7e0; padding:1px 5px; border-radius:4px;}
   .footer{text-align:center; margin-top:18px; font-size:11px; color:#aab;}
   .name{font-weight:700;}
+  button.sharex{
+    width:100%; margin-top:16px; padding:11px; font-size:14px; font-weight:700;
+    color:#fff; background:#000; border:1px solid #000; border-radius:12px; cursor:pointer;
+  }
+  button.sharex:hover{background:#222;}
+  .seo{
+    background:var(--card); border:1px solid var(--line); border-radius:16px;
+    padding:20px; box-shadow:0 6px 24px rgba(20,30,60,.06); margin-top:24px;
+    font-size:13px; color:var(--sub);
+  }
+  .seo h2{font-size:15px; color:var(--ink); margin:0 0 8px;}
+  .seo h3{font-size:13px; color:var(--ink); margin:18px 0 6px;}
+  .seo ol, .seo ul{margin:6px 0; padding-left:20px;}
+  .seo li{margin:3px 0;}
+  .seo details{border-top:1px solid var(--line); padding:7px 0; margin:0;}
+  .seo details:last-of-type{border-bottom:1px solid var(--line);}
+  .seo summary{cursor:pointer; color:var(--ink); font-weight:600; font-size:13px;}
+  .seo details p{margin:6px 0 2px;}
 </style>
 </head>
 <body>
@@ -92,8 +125,99 @@
   <div id="screen" class="card">
     <div class="status"><span class="spin"></span>読み込み中…</div>
   </div>
+  <section class="seo">
+    <h2>オンラインじゃんけんとは</h2>
+    <p>離れた友達とリンクひとつでじゃんけん勝負ができる無料サービスです。2人でも3人以上でもOK。全員の手がそろったら、自動で1位から最下位までの順位が決まります。</p>
+    <h3>使い方</h3>
+    <ol>
+      <li>「新しいじゃんけんを作る」で名前と5回ぶんの手、開始用パスワードを決める</li>
+      <li>作成されたリンクをコピーして、LINEやSNSで友達に送る</li>
+      <li>友達はリンクを開いて、名前と5回ぶんの手を選んで参加する</li>
+      <li>全員そろったら、ホストがパスワードを入れて「開始」を押す</li>
+      <li>1回目の手から自動で勝負（あいこは次の手へ）</li>
+      <li>1位から最下位まで、全員の順位が表示される</li>
+    </ol>
+    <h3>こんなときに</h3>
+    <ul>
+      <li>順番決め（発表順・席順・プレゼント交換の順番）</li>
+      <li>奢り決め・罰ゲーム決め</li>
+      <li>リモート飲み会・オンライン帰省でのミニゲーム</li>
+      <li>会議やゼミの発表順を公平に決める</li>
+      <li>ゲームのチーム分け・先攻後攻決め</li>
+    </ul>
+    <h3>よくある質問</h3>
+    <details>
+      <summary>無料で使えますか？</summary>
+      <p>はい、完全無料です。アカウント登録も不要で、リンクを開くだけで使えます。</p>
+    </details>
+    <details>
+      <summary>何人まで参加できますか？</summary>
+      <p>2人から何人でも参加できます。人数が増えても全員の順位を自動で決定します。</p>
+    </details>
+    <details>
+      <summary>あいこになったらどうなりますか？</summary>
+      <p>あいこの場合は次の手で勝負します。5回ともあいこの場合は、6回目以降は自動でランダムな手が出て必ず決着します。</p>
+    </details>
+    <details>
+      <summary>アプリのインストールは必要ですか？</summary>
+      <p>不要です。スマホでもパソコンでも、ブラウザだけで遊べます。</p>
+    </details>
+    <details>
+      <summary>相手に自分の手は見えますか？</summary>
+      <p>いいえ。選んだ手は開始まで誰にも見えません。全員の手がそろってホストが開始した瞬間に、まとめて公開・判定されます。</p>
+    </details>
+  </section>
   <div class="footer">友達同士で勝敗を決めるためのミニサイト</div>
 </div>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "無料で使えますか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "はい、完全無料です。アカウント登録も不要で、リンクを開くだけで使えます。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "何人まで参加できますか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "2人から何人でも参加できます。人数が増えても全員の順位を自動で決定します。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "あいこになったらどうなりますか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "あいこの場合は次の手で勝負します。5回ともあいこの場合は、6回目以降は自動でランダムな手が出て必ず決着します。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "アプリのインストールは必要ですか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "不要です。スマホでもパソコンでも、ブラウザだけで遊べます。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "相手に自分の手は見えますか？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "いいえ。選んだ手は開始まで誰にも見えません。全員の手がそろってホストが開始した瞬間に、まとめて公開・判定されます。"
+      }
+    }
+  ]
+}
+</script>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -441,8 +565,27 @@ async function renderResult(me){
     </div>
     <div class="standings"><div class="rtitle" style="font-size:12px;color:var(--sub)">順位</div>${rows}</div>
     <details class="rounds"><summary>各回の手をみる</summary>${rdetail}</details>
+    <button class="sharex" id="sharex">Xで結果をシェア</button>
+    <button class="ghost" id="sharecp">結果をコピー</button>
     <button class="ghost" id="again">新しいじゃんけんを作る</button>
   `);
+  // シェア文（URLは必ずトップページ。ゲームIDは含めない）
+  const SHARE_URL = "https://online-janken.github.io/";
+  const topLine = res.ranking.slice(0, 3).map((pid, i) => `${medals[i]}${i+1}位 ${res.nameOf[pid]}`).join(" ");
+  const shareText = (myRank ? `あなたは${myRank}位！ ` : "")
+    + `オンラインじゃんけんで勝負！${topLine}（参加${N}人）\n#オンラインじゃんけん\n${SHARE_URL}`;
+  const shareX = screen.querySelector("#sharex");
+  if (shareX) shareX.addEventListener("click", () => {
+    window.open("https://twitter.com/intent/tweet?text=" + encodeURIComponent(shareText), "_blank", "noopener");
+  });
+  const shareCp = screen.querySelector("#sharecp");
+  if (shareCp) shareCp.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(shareText);
+      shareCp.textContent = "コピーしました";
+      setTimeout(() => { shareCp.textContent = "結果をコピー"; }, 1500);
+    } catch(e){ /* クリップボード非対応環境では何もしない */ }
+  });
   const again = screen.querySelector("#again");
   if (again) again.addEventListener("click", () => { location.href = location.origin + location.pathname; });
 }
